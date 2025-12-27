@@ -201,3 +201,69 @@ func TestCreateProduct(t *testing.T) {
     }
 }
 ```
+
+---
+
+# 🚀 API Go (Gin + GORM + SQLite)
+
+Projeto inicial de uma API RESTful robusta usando as melhores práticas do ecossistema Go.
+
+## 🛠 Tecnologias
+
+- **Linguagem:** Go (Golang) 1.22+
+- **Framework Web:** [Gin Web Framework](https://github.com/gin-gonic/gin) (Alta performance e produtividade)
+- **ORM:** [GORM](https://gorm.io/) (Manipulação de banco de dados)
+- **Database:** SQLite (Driver Pure Go - sem dependência de CGo)
+- **Config:** Godotenv (Variáveis de ambiente)
+- **Testes:** Go Testing + Banco em memória
+
+## 📂 Estrutura (Clean Architecture Simplificada)
+
+O projeto segue o padrão `Standard Go Project Layout`:
+
+- `cmd/api`: Ponto de entrada (Main).
+- `internal/handlers`: Camada HTTP (Gin Controllers).
+- `internal/product`: Regra de Negócio (Service).
+- `internal/storage`: Acesso a Dados (Repository/SQL).
+
+## ⚡ Como Rodar
+
+### Pré-requisitos
+
+- Go instalado
+
+### Passo a Passo
+
+1.  **Clone o repo:**
+
+    ```bash
+    git clone [https://github.com/UdsonWillams/go-api-first-steps.git](https://github.com/UdsonWillams/go-api-first-steps.git)
+    cd go-api-first-steps
+    ```
+
+2.  **Instale as dependências:**
+
+    ```bash
+    go mod tidy
+    ```
+
+3.  **Configure o ambiente:**
+    Crie um arquivo `.env` na raiz:
+
+    ```env
+    PORT=:8080
+    DB_URL=meubanco.db
+    ```
+
+4.  **Execute:**
+    ```bash
+    go run cmd/api/main.go
+    ```
+
+## 🧪 Testes
+
+Para rodar os testes unitários (que usam banco em memória):
+
+```bash
+go test ./...
+```

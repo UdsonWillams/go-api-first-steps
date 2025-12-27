@@ -1,0 +1,30 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Rodar API (Debug)",
+            "type": "go",
+            "request": "launch",
+            "mode": "auto",
+            // Aponta para o seu arquivo principal
+            "program": "${workspaceFolder}/cmd/api/main.go",
+            // Define a raiz do projeto como diretório de trabalho
+            // (Importante para ele achar o .env e o meubanco.db)
+            "cwd": "${workspaceFolder}",
+            "env": {
+                // Aqui você pode forçar variáveis de ambiente extras se quiser
+                "GO_ENV": "development"
+            },
+            "console": "integratedTerminal"
+        },
+        {
+            "name": "Rodar Testes",
+            "type": "go",
+            "request": "launch",
+            "mode": "test",
+            "program": "${workspaceFolder}/...",
+            "cwd": "${workspaceFolder}",
+            "showLog": true
+        }
+    ]
+}

@@ -6,8 +6,14 @@ import (
 )
 
 type Product struct {
-	gorm.Model
-	Name string `json:"name"`
+	gorm.Model // ID, CreatedAt, UpdatedAt, DeletedAt
+
+	// Tags controlam o banco:
+	// unique: não deixa repetir nome
+	// not null: obriga a ter valor
+	// size: limita caracteres (varchar)
+	Name  string  `json:"name" gorm:"type:text;unique;not null"`
+	Price float64 `json:"price" gorm:"default:0"` // Exemplo de campo novo
 }
 
 type Repository struct {

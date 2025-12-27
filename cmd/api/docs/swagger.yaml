@@ -1,0 +1,17 @@
+basePath: /api
+host: localhost:8080
+info:
+  contact:
+    email: suporte@exemplo.com
+    name: Suporte
+  description: API com Autenticação Keycloak, GORM, Slog e Docker.
+  termsOfService: http://swagger.io/terms/
+  title: API de Produtos Go
+  version: "1.0"
+paths: {}
+securityDefinitions:
+  BearerAuth:
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"

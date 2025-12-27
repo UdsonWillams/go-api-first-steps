@@ -1,0 +1,18 @@
+version: '3.8'
+
+services:
+  app:
+    build: .
+    container_name: go-api-app
+    ports:
+      - "8080:8080"
+    environment:
+      - PORT=:8080
+      - DB_URL=/data/meubanco.db
+    volumes:
+      - sqlite_data:/data
+    # O comando de restart garante que se o banco demorar, ele tenta de novo
+    restart: always 
+
+volumes:
+  sqlite_data:

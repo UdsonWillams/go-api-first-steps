@@ -1,63 +1,122 @@
 package handlers
 
 import (
-	"encoding/json"
-	"go-api-first-steps/internal/product"
+	"log/slog"
 	"net/http"
 	"strconv"
+
+	"go-api-first-steps/internal/product"
+
+	"github.com/gin-gonic/gin"
 )
 
 type ProductHandler struct {
 	Service *product.Service
 }
 
-// POST /products
-func (h *ProductHandler) Create(w http.ResponseWriter, r *http.Request) {
-	var body struct {
-		Name string `json:"name"`
-	}
-	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
-		http.Error(w, "JSON invalido", http.StatusBadRequest)
+// Create cria um novo produto
+// @Summary      Cria um produto
+// @Description  Cria um novo produto no banco de dados
+// @Tags         produtos
+// @Accept       json
+// @Produce      json
+// @Param        request body     handlers.CreateProductRequest true "Dados do Produto"
+// @Success      201     {object} handlers.MessageResponse
+// @Failure      400     {object} handlers.ErrorResponse
+// @Failure      500     {object} handlers.ErrorResponse
+// @Security     BearerAuth
+// @Router       /products [post]
+func (h *ProductHandler) Create(c *gin.Context) {
+	var req CreateProductRequest
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		slog.WarnContext(c.Request.Context(), "JSON inválido", "error", err)
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "JSON inválido"})
 		return
 	}
-	name, err := h.Service.CreateProduct(body.Name)
+
+	slog.InfoContext(c.Request.Context(), "Criando produto", "name", req.Name)
+
+	name, err := h.Service.CreateProduct(req.Name)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		slog.ErrorContext(c.Request.Context(), "Erro ao criar", "error", err)
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: err.Error()})
 		return
 	}
-	w.WriteHeader(http.StatusCreated)
-	w.Write([]byte("Criado: " + name))
+
+	c.JSON(http.StatusCreated, MessageResponse{Message: "Criado: " + name})
 }
 
-// GET /products
-func (h *ProductHandler) List(w http.ResponseWriter, r *http.Request) {
-	products, _ := h.Service.ListProducts()
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(products)
-}
-
-// PUT /products/{id}
-func (h *ProductHandler) Update(w http.ResponseWriter, r *http.Request) {
-	idStr := r.PathValue("id") // Go 1.22+ feature
-	id, _ := strconv.Atoi(idStr)
-
-	var body struct {
-		Name string `json:"name"`
-	}
-	json.NewDecoder(r.Body).Decode(&body)
-
-	if err := h.Service.UpdateProduct(uint(id), body.Name); err != nil {
-		http.Error(w, "Erro ao atualizar", http.StatusInternalServerError)
+// List lista todos os produtos
+// @Summary      Lista produtos
+// @Description  Retorna a lista completa de produtos cadastrados
+// @Tags         produtos
+// @Produce      json
+// @Success      200  {array}   handlers.ProductResponse
+// @Failure      500  {object}  handlers.ErrorResponse
+// @Security     BearerAuth
+// @Router       /products [get]
+func (h *ProductHandler) List(c *gin.Context) {
+	products, err := h.Service.ListProducts()
+	if err != nil {
+		slog.ErrorContext(c.Request.Context(), "Erro ao listar", "error", err)
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "Erro ao listar"})
 		return
 	}
-	w.Write([]byte("Atualizado com sucesso"))
+	c.JSON(http.StatusOK, products)
 }
 
-// DELETE /products/{id}
-func (h *ProductHandler) Delete(w http.ResponseWriter, r *http.Request) {
-	idStr := r.PathValue("id")
+// Update atualiza um produto
+// @Summary      Atualiza um produto
+// @Description  Atualiza o nome de um produto existente pelo ID
+// @Tags         produtos
+// @Accept       json
+// @Produce      json
+// @Param        id      path     int                          true "ID do Produto"
+// @Param        request body     handlers.UpdateProductRequest true "Novos dados"
+// @Success      200     {object} handlers.MessageResponse
+// @Failure      400     {object} handlers.ErrorResponse
+// @Failure      500     {object} handlers.ErrorResponse
+// @Security     BearerAuth
+// @Router       /products/{id} [put]
+func (h *ProductHandler) Update(c *gin.Context) {
+	idStr := c.Param("id")
 	id, _ := strconv.Atoi(idStr)
 
-	h.Service.DeleteProduct(uint(id))
-	w.Write([]byte("Deletado com sucesso"))
+	var req UpdateProductRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "JSON inválido"})
+		return
+	}
+
+	if err := h.Service.UpdateProduct(uint(id), req.Name); err != nil {
+		slog.ErrorContext(c.Request.Context(), "Erro ao atualizar", "id", id, "error", err)
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "Erro ao atualizar"})
+		return
+	}
+
+	c.JSON(http.StatusOK, MessageResponse{Message: "Atualizado com sucesso"})
+}
+
+// Delete remove um produto
+// @Summary      Deleta um produto
+// @Description  Remove um produto do banco pelo ID (Soft Delete)
+// @Tags         produtos
+// @Produce      json
+// @Param        id   path      int  true  "ID do Produto"
+// @Success      200  {object}  handlers.MessageResponse
+// @Failure      500  {object}  handlers.ErrorResponse
+// @Security     BearerAuth
+// @Router       /products/{id} [delete]
+func (h *ProductHandler) Delete(c *gin.Context) {
+	idStr := c.Param("id")
+	id, _ := strconv.Atoi(idStr)
+
+	if err := h.Service.DeleteProduct(uint(id)); err != nil {
+		slog.ErrorContext(c.Request.Context(), "Erro ao deletar", "id", id, "error", err)
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "Erro ao deletar"})
+		return
+	}
+
+	c.JSON(http.StatusOK, MessageResponse{Message: "Deletado com sucesso"})
 }
