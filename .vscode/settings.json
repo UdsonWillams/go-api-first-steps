@@ -1,0 +1,103 @@
+{
+    "editor.fontSize": 18,
+    "editor.tabSize": 4,
+    "editor.lineHeight": 1.8,
+    "editor.fontLigatures": true,
+    "editor.minimap.enabled": false,
+    "editor.rulers": [100, 120],
+    "editor.guides.bracketPairs": true,
+    "editor.formatOnSave": true,
+    "workbench.iconTheme": "vscode-icons",
+    "workbench.startupEditor": "newUntitledFile",
+    "explorer.compactFolders": false,
+    "files.autoSave": "afterDelay",
+    "terminal.integrated.enableMultiLinePasteWarning": "always",
+    "git.ignoreLimitWarning": true,
+    "debug.internalConsoleOptions": "neverOpen",
+
+    "// --- Configurações de Arquivos e Exclusões ---": "",
+    "files.exclude": {
+        "**/__pycache__": true,
+        "**/*.pyc": true,
+        ".venv": false,
+        "node_modules": true,
+        ".git": false
+    },
+    "files.watcherExclude": {
+        "**/.git/objects/**": true,
+        "**/.git/subtree-cache/**": true,
+        "**/node_modules/**": true,
+        "**/__pycache__/**": true,
+        "**/.venv/**": true
+    },
+
+    "// --- Configurações Python (Ambiente e Linting) ---": "",
+    "python.defaultInterpreterPath": "./.venv/bin/python",
+    "python.terminal.activateEnvironment": true,
+    "python.analysis.extraPaths": [
+        "./functions/video_processing",
+        "./functions/document_processing",
+        "./functions/video_transcription",
+        "./functions/analytics",
+        "./shared",
+        "."
+    ],
+    "python.linting.enabled": true,
+    "python.linting.pylintEnabled": false,
+    "python.linting.flake8Enabled": true,
+    "python.linting.flake8Args": [
+        "--max-line-length=120",
+        "--ignore=E203,W503"
+    ],
+
+    "// --- Configurações de Testes Python ---": "",
+    "python.testing.pytestEnabled": true,
+    "python.testing.pytestArgs": ["tests", "-v"],
+    "python.testing.unittestEnabled": false,
+    "python.testing.nosetestsEnabled": false,
+
+    "// --- Azure Functions ---": "",
+    "azureFunctions.projectSubpath": "functions/video_transcription",
+    "azureFunctions.deploySubpath": "functions/video_transcription",
+    "azureFunctions.scmDoBuildDuringDeployment": true,
+    "azureFunctions.projectLanguage": "Python",
+    "azureFunctions.projectRuntime": "~4",
+    "azureFunctions.preDeployTask": "pip install (video_transcription)",
+
+    "// --- Docker ---": "",
+    "docker.defaultRegistryPath": "aiquickmatch-interview-functions",
+
+    "// --- Linguagens Específicas e Formatadores ---": "",
+    "[python]": {
+        "editor.defaultFormatter": "ms-python.black-formatter",
+        "editor.formatOnSave": true,
+        "editor.codeActionsOnSave": {
+            "source.organizeImports": "explicit"
+        }
+    },
+    "python.formatting.blackArgs": ["--line-length=120"],
+    "isort.args": ["--profile", "black"],
+
+    "[javascript]": {
+        "editor.defaultFormatter": "esbenp.prettier-vscode",
+        "prettier.tabWidth": 4,
+        "prettier.semi": true
+    },
+    "[html]": {
+        "editor.defaultFormatter": "esbenp.prettier-vscode",
+        "prettier.tabWidth": 4
+    },
+    "[json]": {
+        "editor.defaultFormatter": "esbenp.prettier-vscode",
+        "prettier.tabWidth": 4
+    },
+    "[jsonc]": {
+        "editor.defaultFormatter": "esbenp.prettier-vscode",
+        "prettier.tabWidth": 4
+    },
+    "[yaml]": {
+        "editor.formatOnSave": true,
+        "editor.insertSpaces": true,
+        "editor.tabSize": 2
+    }
+}

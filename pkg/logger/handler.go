@@ -5,8 +5,11 @@ import (
 	"log/slog"
 )
 
+// 1. Crie um tipo customizado (pode ser privado)
+type ctxKey string
+
 // TraceIDKey é a chave usada no Contexto
-const TraceIDKey = "trace_id"
+const TraceIDKey ctxKey = "trace_id"
 
 type ContextHandler struct {
 	slog.Handler

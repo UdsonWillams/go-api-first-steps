@@ -48,12 +48,17 @@ func main() {
 		slog.Warn("Nenhum arquivo .env encontrado")
 	}
 
+	// 2. Configura Logs (Terminal + Azure)
+	// Toda a complexidade foi para pkg/logger/setup.go
+	logger.Setup()
+
+	// 3. Configurações
 	port := getEnv("PORT", ":8080")
 	dbUrl := getEnv("DB_URL", "meubanco.db")
 
 	keycloakStr := os.Getenv("KEYCLOAK_PUBLIC_KEY")
 	if keycloakStr == "" {
-		slog.Error("ERRO: KEYCLOAK_PUBLIC_KEY ausente no .env")
+		slog.Error("ERRO CRITICO: KEYCLOAK_PUBLIC_KEY ausente")
 		os.Exit(1)
 	}
 	rsaPublicKey, err := parseKeycloakKey(keycloakStr)
@@ -62,35 +67,33 @@ func main() {
 		os.Exit(1)
 	}
 
-	// --- 3. Dependências ---
+	// 4. Injeção de Dependências
 	repo := storage.NewRepository(dbUrl)
 	service := &product.Service{Repo: repo}
 	handler := &handlers.ProductHandler{Service: service}
 
-	// --- 4. Server ---
+	// 5. Server
 	r := gin.New()
 	r.Use(gin.Recovery())
-	r.Use(middleware.RequestLogger())
+	r.Use(middleware.RequestLogger()) // Middleware gera trace_id
 
-	// Rota do Swagger (Acessível sem login para facilitar)
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
-
 	r.GET("/health", handlers.HealthCheck)
 
 	api := r.Group("/api")
 	{
-		// Note que adicionamos middleware.Auth com a chave pública
 		api.GET("/products", middleware.Auth(rsaPublicKey, ""), handler.List)
 		api.POST("/products", middleware.Auth(rsaPublicKey, "admin"), handler.Create)
 		api.PUT("/products/:id", middleware.Auth(rsaPublicKey, "manager"), handler.Update)
 		api.DELETE("/products/:id", middleware.Auth(rsaPublicKey, "admin"), handler.Delete)
 	}
 
-	slog.Info("Servidor rodando", "port", port, "docs", "http://localhost:8080/swagger/index.html")
-	r.Run(port)
+	slog.Info("Servidor iniciado", "port", port, "azure_enabled", os.Getenv("APPINSIGHTS_CONNECTION_STRING") != "")
+	if err := r.Run(port); err != nil {
+		slog.Error("O servidor parou inesperadamente", "error", err)
+	}
 }
 
-// --- Helpers ---
 func getEnv(key, fallback string) string {
 	if value, exists := os.LookupEnv(key); exists {
 		return value

@@ -17,41 +17,44 @@ type Product struct {
 }
 
 type Repository struct {
-	Db *gorm.DB
+	DB *gorm.DB
 }
 
-func NewRepository(dbPath string) *Repository {
-	// Se dbPath for ":memory:", o banco roda na RAM (para testes)
-	db, err := gorm.Open(sqlite.Open(dbPath), &gorm.Config{})
+func NewRepository(DBPath string) *Repository {
+	// Se DBPath for ":memory:", o banco roda na RAM (para testes)
+	DB, err := gorm.Open(sqlite.Open(DBPath), &gorm.Config{})
 	if err != nil {
 		panic("falha ao conectar no banco")
 	}
-	db.AutoMigrate(&Product{})
-	return &Repository{Db: db}
+	if err := DB.AutoMigrate(&Product{}); err != nil {
+		panic("Falha ao rodar migration: " + err.Error())
+	}
+
+	return &Repository{DB: DB}
 }
 
 func (r *Repository) Save(name string) (*Product, error) {
 	p := Product{Name: name}
-	result := r.Db.Create(&p)
+	result := r.DB.Create(&p)
 	return &p, result.Error
 }
 
 func (r *Repository) FindAll() ([]Product, error) {
 	var products []Product
-	result := r.Db.Find(&products)
+	result := r.DB.Find(&products)
 	return products, result.Error
 }
 
 func (r *Repository) Update(id uint, newName string) error {
 	var p Product
 	// Primeiro busca, depois atualiza
-	if err := r.Db.First(&p, id).Error; err != nil {
+	if err := r.DB.First(&p, id).Error; err != nil {
 		return err
 	}
 	p.Name = newName
-	return r.Db.Save(&p).Error
+	return r.DB.Save(&p).Error
 }
 
 func (r *Repository) Delete(id uint) error {
-	return r.Db.Delete(&Product{}, id).Error
+	return r.DB.Delete(&Product{}, id).Error
 }

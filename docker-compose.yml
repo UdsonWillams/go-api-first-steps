@@ -12,7 +12,7 @@ services:
     volumes:
       - sqlite_data:/data
     # O comando de restart garante que se o banco demorar, ele tenta de novo
-    restart: always 
+    restart: always
 
 volumes:
   sqlite_data:
