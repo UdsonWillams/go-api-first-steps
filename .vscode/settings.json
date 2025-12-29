@@ -15,7 +15,7 @@
     "git.ignoreLimitWarning": true,
     "debug.internalConsoleOptions": "neverOpen",
 
-    "// --- Configurações de Arquivos e Exclusões ---": "",
+    // --- Configurações de Arquivos e Exclusões ---": "",
     "files.exclude": {
         "**/__pycache__": true,
         "**/*.pyc": true,
@@ -31,7 +31,7 @@
         "**/.venv/**": true
     },
 
-    "// --- Configurações Python (Ambiente e Linting) ---": "",
+    // --- Configurações Python (Ambiente e Linting) ---": "",
     "python.defaultInterpreterPath": "./.venv/bin/python",
     "python.terminal.activateEnvironment": true,
     "python.analysis.extraPaths": [
@@ -50,7 +50,7 @@
         "--ignore=E203,W503"
     ],
 
-    "// --- Configurações de Testes Python ---": "",
+    // --- Configurações de Testes Python ---": "",
     "python.testing.pytestEnabled": true,
     "python.testing.pytestArgs": ["tests", "-v"],
     "python.testing.unittestEnabled": false,
