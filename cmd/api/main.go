@@ -10,12 +10,12 @@ import (
 
 	"go-api-first-steps/internal/handlers"
 	"go-api-first-steps/internal/middleware"
-	"go-api-first-steps/internal/product"
-	"go-api-first-steps/internal/storage"
+	"go-api-first-steps/internal/services/product"
+	storage "go-api-first-steps/internal/storage/sqlite"
 	"go-api-first-steps/pkg/logger"
 
 	// IMPORTANTE: Importe a pasta docs gerada pelo swag (mesmo que ainda não exista)
-	_ "go-api-first-steps/docs"
+	_ "go-api-first-steps/cmd/api/swagger"
 
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"

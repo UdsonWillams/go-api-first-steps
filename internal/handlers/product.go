@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"strconv"
 
-	"go-api-first-steps/internal/product"
+	"go-api-first-steps/internal/services/product"
 
 	"github.com/gin-gonic/gin"
 )

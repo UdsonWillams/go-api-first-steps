@@ -1,7 +1,7 @@
 package product
 
 import (
-	"go-api-first-steps/internal/storage"
+	storage "go-api-first-steps/internal/storage/sqlite"
 	"testing"
 )
 

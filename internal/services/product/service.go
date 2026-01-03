@@ -2,7 +2,7 @@ package product
 
 import (
 	"fmt"
-	"go-api-first-steps/internal/storage"
+	storage "go-api-first-steps/internal/storage/sqlite"
 )
 
 type Service struct {
