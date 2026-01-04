@@ -41,6 +41,9 @@ graph TD;
 |-------|-----------|
 | `cmd/api` | Entrypoint. O `main.go` fica aqui. |
 | `internal` | Código privado da aplicação (não importável por outros projetos Go). |
+
+> [!NOTE]
+> Esta estrutura segue o padrão da comunidade [golang-standards/project-layout](https://github.com/golang-standards/project-layout).
 | `internal/api` | Configuração de Rotas e Versões (v1). |
 | `internal/config` | Carregamento de variáveis de ambiente. |
 | `internal/handlers`| Controladores HTTP. |
