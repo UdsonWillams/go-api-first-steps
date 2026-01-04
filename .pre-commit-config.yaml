@@ -18,3 +18,17 @@ repos:
         types: [go]
         language: system
         pass_filenames: false # O linter roda no projeto todo, não arquivo por arquivo
+
+      - id: go-build
+        name: go-build
+        entry: go build -o tmp_check.exe ./cmd/api/main.go
+        types: [go]
+        language: system
+        pass_filenames: false
+
+      - id: go-test
+        name: go-test
+        entry: go test -v ./...
+        types: [go]
+        language: system
+        pass_filenames: false

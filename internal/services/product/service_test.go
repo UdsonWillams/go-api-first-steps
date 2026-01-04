@@ -23,7 +23,7 @@ func TestCreateAndListProduct(t *testing.T) {
 	}
 
 	// 3. Teste de LISTAGEM
-	products, err := service.ListProducts()
+	products, err := service.ListProducts(1, 10)
 	if err != nil {
 		t.Fatalf("Erro ao listar: %v", err)
 	}

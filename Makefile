@@ -28,12 +28,17 @@ lint:
 # 📄 Atualiza a documentação do Swagger
 swag:
 	@echo "📄 Gerando Swagger..."
-	swag init -g $(MAIN_FILE) --output docs
+	swag init -g $(MAIN_FILE) --output cmd/api/swagger
 
 # 🧪 Roda os testes
 test:
 	@echo "🧪 Rodando testes..."
 	go test -v ./...
+
+# 📊 Roda testes com cobertura
+cover:
+	@echo "📊 Verificando cobertura..."
+	go test -cover ./...
 
 # 🔑 Gera o Token Mock (atalho pro script que criamos)
 mock:

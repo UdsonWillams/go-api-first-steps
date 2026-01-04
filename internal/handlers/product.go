@@ -49,15 +49,20 @@ func (h *ProductHandler) Create(c *gin.Context) {
 
 // List lista todos os produtos
 // @Summary      Lista produtos
-// @Description  Retorna a lista completa de produtos cadastrados
+// @Description  Retorna a lista de produtos com paginação
 // @Tags         produtos
 // @Produce      json
+// @Param        page      query    int     false  "Número da página" default(1)
+// @Param        page_size query    int     false  "Itens por página" default(10)
 // @Success      200  {array}   handlers.ProductResponse
 // @Failure      500  {object}  handlers.ErrorResponse
 // @Security     BearerAuth
 // @Router       /products [get]
 func (h *ProductHandler) List(c *gin.Context) {
-	products, err := h.Service.ListProducts()
+	page, _ := strconv.Atoi(c.Query("page"))
+	pageSize, _ := strconv.Atoi(c.Query("page_size"))
+
+	products, err := h.Service.ListProducts(page, pageSize)
 	if err != nil {
 		slog.ErrorContext(c.Request.Context(), "Erro ao listar", "error", err)
 		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "Erro ao listar"})

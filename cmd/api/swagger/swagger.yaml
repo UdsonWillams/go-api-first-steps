@@ -1,4 +1,45 @@
-basePath: /api
+basePath: /api/v1
+definitions:
+  handlers.CreateProductRequest:
+    properties:
+      name:
+        example: Monitor UltraWide
+        type: string
+    required:
+    - name
+    type: object
+  handlers.ErrorResponse:
+    properties:
+      error:
+        example: Parâmetros inválidos
+        type: string
+    type: object
+  handlers.MessageResponse:
+    properties:
+      message:
+        example: Operação realizada com sucesso
+        type: string
+    type: object
+  handlers.ProductResponse:
+    properties:
+      created_at:
+        example: "2023-12-25T15:00:00Z"
+        type: string
+      id:
+        example: 1
+        type: integer
+      name:
+        example: Monitor UltraWide
+        type: string
+    type: object
+  handlers.UpdateProductRequest:
+    properties:
+      name:
+        example: Monitor UltraWide Pro
+        type: string
+    required:
+    - name
+    type: object
 host: localhost:8080
 info:
   contact:
@@ -8,7 +49,146 @@ info:
   termsOfService: http://swagger.io/terms/
   title: API de Produtos Go
   version: "1.0"
-paths: {}
+paths:
+  /health:
+    get:
+      description: Retorna status 200 se a API estiver rodando
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Verifica saúde da API
+      tags:
+      - sistema
+  /products:
+    get:
+      description: Retorna a lista de produtos com paginação
+      parameters:
+      - default: 1
+        description: Número da página
+        in: query
+        name: page
+        type: integer
+      - default: 10
+        description: Itens por página
+        in: query
+        name: page_size
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/handlers.ProductResponse'
+            type: array
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Lista produtos
+      tags:
+      - produtos
+    post:
+      consumes:
+      - application/json
+      description: Cria um novo produto no banco de dados
+      parameters:
+      - description: Dados do Produto
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.CreateProductRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/handlers.MessageResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Cria um produto
+      tags:
+      - produtos
+  /products/{id}:
+    delete:
+      description: Remove um produto do banco pelo ID (Soft Delete)
+      parameters:
+      - description: ID do Produto
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.MessageResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Deleta um produto
+      tags:
+      - produtos
+    put:
+      consumes:
+      - application/json
+      description: Atualiza o nome de um produto existente pelo ID
+      parameters:
+      - description: ID do Produto
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Novos dados
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.UpdateProductRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.MessageResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Atualiza um produto
+      tags:
+      - produtos
 securityDefinitions:
   BearerAuth:
     in: header

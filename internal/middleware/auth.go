@@ -1,81 +1,119 @@
 package middleware
 
 import (
-	"crypto/rsa"
+	"context"
+	"fmt"
 	"log/slog"
 	"net/http"
 	"strings"
 
+	"go-api-first-steps/internal/config"
+
+	"github.com/coreos/go-oidc/v3/oidc"
 	"github.com/gin-gonic/gin"
-	"github.com/golang-jwt/jwt/v5"
 )
 
-// KeycloakClaims mapeia a estrutura interna do Token
-type KeycloakClaims struct {
-	RealmAccess struct {
-		Roles []string `json:"roles"`
-	} `json:"realm_access"`
-	jwt.RegisteredClaims
+// Authenticator gerencia a verificação de tokens OIDC.
+// Ele mantém uma referência ao Verifier do go-oidc para validar tokens JWT.
+type Authenticator struct {
+	Verifier *oidc.IDTokenVerifier
 }
 
-// Auth agora recebe a Chave Pública carregada no main
-func Auth(publicKey *rsa.PublicKey, requiredRole string) gin.HandlerFunc {
+// NewAuthenticator inicializa o Provider OIDC e configura o Verifier.
+// Esta função deve ser chamada apenas uma vez na inicialização da aplicação (Singleton).
+func NewAuthenticator(cfg *config.Config) (*Authenticator, error) {
+	// 1. Configura o Provider (Auto Discovery das chaves)
+	provider, err := oidc.NewProvider(context.Background(), cfg.KeycloakURL)
+	if err != nil {
+		return nil, fmt.Errorf("falha ao inicializar OIDC Provider: %w", err)
+	}
+
+	oidcConfig := &oidc.Config{
+		ClientID: cfg.ClientID,
+	}
+	verifier := provider.Verifier(oidcConfig)
+
+	return &Authenticator{
+		Verifier: verifier,
+	}, nil
+}
+
+// CheckMiddleware cria um handler do Gin para validar o token JWT presente no header Authorization.
+//
+// Parâmetros:
+//   - mode: Define a lógica de validação de roles. Pode ser "AND" (todas as roles necessárias) ou "OR" (pelo menos uma). Default: "OR".
+//   - requiredRoles: Lista de roles que o usuário deve possuir para acessar o recurso.
+//
+// Exemplo:
+//
+//	auth.CheckMiddleware("OR", "admin", "manager") // Requer admin OU manager
+//	auth.CheckMiddleware("AND", "admin", "finance") // Requer admin E finance
+func (a *Authenticator) CheckMiddleware(mode string, requiredRoles ...string) gin.HandlerFunc {
 	return func(c *gin.Context) {
+		if a.Verifier == nil {
+			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "Autenticação não configurada"})
+			return
+		}
+
 		authHeader := c.GetHeader("Authorization")
 		if authHeader == "" {
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Token não informado"})
 			return
 		}
 
-		// Remove "Bearer "
 		tokenString := strings.TrimPrefix(authHeader, "Bearer ")
 
-		// 1. Parse COM Validação de Assinatura (Seguro)
-		token, err := jwt.ParseWithClaims(tokenString, &KeycloakClaims{}, func(t *jwt.Token) (interface{}, error) {
-			// Valida se o algoritmo é realmente RSA (evita ataques de alg: none)
-			if _, ok := t.Method.(*jwt.SigningMethodRSA); !ok {
-				return nil, jwt.ErrSignatureInvalid
-			}
-			return publicKey, nil
-		})
-
-		// 2. Tratamento de erros de validação
-		if err != nil || !token.Valid {
-			slog.WarnContext(c.Request.Context(), "Token inválido ou expirado", "error", err)
+		// Valida o Token
+		idToken, err := a.Verifier.Verify(c.Request.Context(), tokenString)
+		if err != nil {
+			slog.WarnContext(c.Request.Context(), "Token inválido", "error", err)
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Token inválido"})
 			return
 		}
 
-		// 3. Extrai as Claims
-		claims, ok := token.Claims.(*KeycloakClaims)
-		if !ok {
-			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Erro nas claims"})
-			return
-		}
-
-		// 4. Validação de Role (RBAC)
-		if requiredRole != "" {
-			hasRole := false
-			for _, r := range claims.RealmAccess.Roles {
-				if r == requiredRole {
-					hasRole = true
-					break
-				}
+		// Validação de Roles
+		if len(requiredRoles) > 0 {
+			var claims struct {
+				RealmAccess struct {
+					Roles []string `json:"roles"`
+				} `json:"realm_access"`
 			}
-
-			if !hasRole {
-				slog.WarnContext(c.Request.Context(), "Acesso negado: Role insuficiente",
-					"user_id", claims.Subject,
-					"required_role", requiredRole,
-					"user_roles", claims.RealmAccess.Roles)
-
-				c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"error": "Sem permissão"})
+			if err := idToken.Claims(&claims); err != nil {
+				c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "Erro ao ler claims"})
 				return
 			}
+
+			userRoles := claims.RealmAccess.Roles
+			rolesMap := make(map[string]bool)
+			for _, r := range userRoles {
+				rolesMap[r] = true
+			}
+
+			if strings.ToUpper(mode) == "AND" {
+				// Todas as roles requeridas devem estar presentes
+				for _, req := range requiredRoles {
+					if !rolesMap[req] {
+						c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"error": "Sem permissão (Faltam roles)"})
+						return
+					}
+				}
+			} else {
+				// Modo OR (Default): Pelo menos uma role deve estar presente
+				hasAtLeastOne := false
+				for _, req := range requiredRoles {
+					if rolesMap[req] {
+						hasAtLeastOne = true
+						break
+					}
+				}
+				if !hasAtLeastOne {
+					c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"error": "Sem permissão"})
+					return
+				}
+			}
 		}
 
-		// Injeta ID no contexto
-		c.Set("user_id", claims.Subject)
+		c.Set("user_id", idToken.Subject)
 		c.Next()
 	}
 }

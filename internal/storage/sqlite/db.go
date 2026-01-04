@@ -5,21 +5,27 @@ import (
 	"gorm.io/gorm"
 )
 
+// Product representa a entidade Produto no banco de dados.
 type Product struct {
 	gorm.Model // ID, CreatedAt, UpdatedAt, DeletedAt
 
-	// Tags controlam o banco:
-	// unique: não deixa repetir nome
-	// not null: obriga a ter valor
-	// size: limita caracteres (varchar)
+	// Tags controlam o comportamento do GORM:
+	// unique: constraint de unicidade.
+	// not null: campo obrigatório.
+	// type:text: define o tipo da coluna no SQLite.
 	Name  string  `json:"name" gorm:"type:text;unique;not null"`
-	Price float64 `json:"price" gorm:"default:0"` // Exemplo de campo novo
+	Price float64 `json:"price" gorm:"default:0"`
 }
 
+// Repository gerencia a persistência de produtos usando GORM.
 type Repository struct {
 	DB *gorm.DB
 }
 
+// NewRepository inicializa a conexão com o banco de dados e roda migrações.
+//
+// Parâmetros:
+//   - DBPath: Caminho para o arquivo arquivo.db ou ":memory:" para testes.
 func NewRepository(DBPath string) *Repository {
 	// Se DBPath for ":memory:", o banco roda na RAM (para testes)
 	DB, err := gorm.Open(sqlite.Open(DBPath), &gorm.Config{})
@@ -39,9 +45,11 @@ func (r *Repository) Save(name string) (*Product, error) {
 	return &p, result.Error
 }
 
-func (r *Repository) FindAll() ([]Product, error) {
+// FindAll recupera produtos com suporte a paginação.
+func (r *Repository) FindAll(page, pageSize int) ([]Product, error) {
 	var products []Product
-	result := r.DB.Find(&products)
+	offset := (page - 1) * pageSize
+	result := r.DB.Offset(offset).Limit(pageSize).Find(&products)
 	return products, result.Error
 }
 
