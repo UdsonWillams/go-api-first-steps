@@ -9,10 +9,24 @@ services:
     environment:
       - PORT=:8080
       - DB_URL=/data/meubanco.db
+      # Keycloak/OIDC Configuration
+      - KEYCLOAK_URL=${KEYCLOAK_URL:-http://keycloak:8080/realms/myrealm}
+      - KEYCLOAK_CLIENT_ID=${KEYCLOAK_CLIENT_ID:-go-api-client}
+      # Development Mode (set to "true" to bypass auth)
+      - DEV_MODE=${DEV_MODE:-false}
+      # Azure Application Insights (optional)
+      - APPINSIGHTS_CONNECTION_STRING=${APPINSIGHTS_CONNECTION_STRING:-}
     volumes:
       - sqlite_data:/data
     # O comando de restart garante que se o banco demorar, ele tenta de novo
     restart: always
+    # Healthcheck para garantir que a aplicação está saudável
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
 
 volumes:
   sqlite_data:

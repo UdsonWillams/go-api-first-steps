@@ -86,7 +86,15 @@ func (h *ProductHandler) List(c *gin.Context) {
 // @Router       /products/{id} [put]
 func (h *ProductHandler) Update(c *gin.Context) {
 	idStr := c.Param("id")
-	id, _ := strconv.Atoi(idStr)
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "ID inválido: deve ser um número"})
+		return
+	}
+	if id <= 0 {
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "ID inválido: deve ser maior que zero"})
+		return
+	}
 
 	var req UpdateProductRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -110,12 +118,21 @@ func (h *ProductHandler) Update(c *gin.Context) {
 // @Produce      json
 // @Param        id   path      int  true  "ID do Produto"
 // @Success      200  {object}  handlers.MessageResponse
+// @Failure      400  {object}  handlers.ErrorResponse
 // @Failure      500  {object}  handlers.ErrorResponse
 // @Security     BearerAuth
 // @Router       /products/{id} [delete]
 func (h *ProductHandler) Delete(c *gin.Context) {
 	idStr := c.Param("id")
-	id, _ := strconv.Atoi(idStr)
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "ID inválido: deve ser um número"})
+		return
+	}
+	if id <= 0 {
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "ID inválido: deve ser maior que zero"})
+		return
+	}
 
 	if err := h.Service.DeleteProduct(uint(id)); err != nil {
 		slog.ErrorContext(c.Request.Context(), "Erro ao deletar", "id", id, "error", err)

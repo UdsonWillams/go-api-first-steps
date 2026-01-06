@@ -9,7 +9,7 @@ func TestCreateAndListProduct(t *testing.T) {
 	// 1. Setup: Cria banco em memória (:memory:)
 	// Isso garante que o teste não suje o seu banco real 'meubanco.db'
 	repo := storage.NewRepository(":memory:")
-	service := Service{Repo: repo}
+	service := NewService(repo)
 
 	// 2. Teste de CRIAÇÃO
 	createdName, err := service.CreateProduct("Mouse Gamer")
@@ -39,7 +39,7 @@ func TestCreateAndListProduct(t *testing.T) {
 
 func TestValidateEmptyName(t *testing.T) {
 	repo := storage.NewRepository(":memory:")
-	service := Service{Repo: repo}
+	service := NewService(repo)
 
 	_, err := service.CreateProduct("")
 

@@ -1,8 +1,13 @@
 package main
 
 import (
+	"context"
 	"log/slog"
+	"net/http"
 	"os"
+	"os/signal"
+	"syscall"
+	"time"
 
 	"go-api-first-steps/internal/api"
 	"go-api-first-steps/internal/config"
@@ -42,15 +47,42 @@ func main() {
 
 	// 3. Injeção de Dependências
 	repo := storage.NewRepository(cfg.DBUrl)
-	service := &product.Service{Repo: repo}
+	service := product.NewService(repo)
 	handler := &handlers.ProductHandler{Service: service}
 
 	// 4. Configuração do Servidor (Rotas)
 	r := api.NewRouter(cfg, handler)
 
-	// 5. Iniciar Servidor
-	slog.Info("Servidor iniciado", "port", cfg.Port, "azure_enabled", cfg.AppInsightsConnectionString != "")
-	if err := r.Run(cfg.Port); err != nil {
-		slog.Error("O servidor parou inesperadamente", "error", err)
+	// 5. Configurar servidor HTTP
+	srv := &http.Server{
+		Addr:    cfg.Port,
+		Handler: r,
 	}
+
+	// 6. Iniciar servidor em goroutine
+	go func() {
+		slog.Info("Servidor iniciado", "port", cfg.Port, "azure_enabled", cfg.AppInsightsConnectionString != "")
+		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			slog.Error("Erro ao iniciar servidor", "error", err)
+			os.Exit(1)
+		}
+	}()
+
+	// 7. Graceful Shutdown
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+	<-quit
+
+	slog.Info("Desligando servidor graciosamente...")
+
+	// Timeout de 10 segundos para conexões ativas finalizarem
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	if err := srv.Shutdown(ctx); err != nil {
+		slog.Error("Erro ao desligar servidor", "error", err)
+		os.Exit(1)
+	}
+
+	slog.Info("Servidor desligado com sucesso")
 }

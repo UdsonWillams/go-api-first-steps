@@ -27,15 +27,24 @@ func NewRouter(cfg *config.Config, productHandler *handlers.ProductHandler) *gin
 	r.Use(middleware.RequestLogger())
 
 	// Initialize OIDC Authenticator
-	authenticator, err := middleware.NewAuthenticator(cfg)
-	if err != nil {
+	var authenticator *middleware.Authenticator
+	var err error
+
+	if cfg.DevMode {
 		slog.WarnContext(
 			context.Background(),
-			"Failed to initialize Authenticator",
-			"error", err)
-		// Log error but allow startup. Auth middleware will return 500 if verifier is missing.
-		// In production, you might want to os.Exit(1) here.
-		// slog.Error("Failed to initialize Authenticator", "error", err)
+			"⚠️  DevMode ativo - usando autenticador de desenvolvimento (sem validação real)")
+		authenticator = middleware.NewDevAuthenticator()
+	} else {
+		authenticator, err = middleware.NewAuthenticator(cfg)
+		if err != nil {
+			slog.WarnContext(
+				context.Background(),
+				"Failed to initialize Authenticator",
+				"error", err)
+			// Log error but allow startup. Auth middleware will return 500 if verifier is missing.
+			// In production, you might want to os.Exit(1) here.
+		}
 	}
 
 	// Swagger

@@ -2,13 +2,19 @@ package product
 
 import (
 	"fmt"
-	storage "go-api-first-steps/internal/storage/sqlite"
+
+	"go-api-first-steps/internal/domain"
 )
 
 // Service encapsula a lógica de negócio relacionada a produtos.
 // Ele interage com o Repositório para persistência de dados.
 type Service struct {
-	Repo *storage.Repository
+	Repo domain.ProductRepository
+}
+
+// NewService cria uma nova instância do Service com o repositório injetado.
+func NewService(repo domain.ProductRepository) *Service {
+	return &Service{Repo: repo}
 }
 
 // CreateProduct valida e cria um novo produto.
@@ -29,7 +35,7 @@ func (s *Service) CreateProduct(name string) (string, error) {
 // Parâmetros:
 //   - page: Número da página (inicia em 1).
 //   - pageSize: Quantidade de itens por página (default 10, max 100).
-func (s *Service) ListProducts(page, pageSize int) ([]storage.Product, error) {
+func (s *Service) ListProducts(page, pageSize int) ([]domain.Product, error) {
 	if page < 1 {
 		page = 1
 	}
@@ -37,6 +43,11 @@ func (s *Service) ListProducts(page, pageSize int) ([]storage.Product, error) {
 		pageSize = 10
 	}
 	return s.Repo.FindAll(page, pageSize)
+}
+
+// GetProduct busca um produto pelo ID.
+func (s *Service) GetProduct(id uint) (*domain.Product, error) {
+	return s.Repo.FindByID(id)
 }
 
 func (s *Service) UpdateProduct(id uint, name string) error {

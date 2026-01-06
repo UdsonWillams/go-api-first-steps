@@ -17,6 +17,7 @@ import (
 // Ele mantém uma referência ao Verifier do go-oidc para validar tokens JWT.
 type Authenticator struct {
 	Verifier *oidc.IDTokenVerifier
+	DevMode  bool // Se true, bypassa a autenticação (apenas para desenvolvimento)
 }
 
 // NewAuthenticator inicializa o Provider OIDC e configura o Verifier.
@@ -35,7 +36,17 @@ func NewAuthenticator(cfg *config.Config) (*Authenticator, error) {
 
 	return &Authenticator{
 		Verifier: verifier,
+		DevMode:  false,
 	}, nil
+}
+
+// NewDevAuthenticator cria um autenticador para desenvolvimento que bypassa a validação.
+// NUNCA use em produção!
+func NewDevAuthenticator() *Authenticator {
+	return &Authenticator{
+		Verifier: nil,
+		DevMode:  true,
+	}
 }
 
 // CheckMiddleware cria um handler do Gin para validar o token JWT presente no header Authorization.
@@ -50,6 +61,14 @@ func NewAuthenticator(cfg *config.Config) (*Authenticator, error) {
 //	auth.CheckMiddleware("AND", "admin", "finance") // Requer admin E finance
 func (a *Authenticator) CheckMiddleware(mode string, requiredRoles ...string) gin.HandlerFunc {
 	return func(c *gin.Context) {
+		// DevMode: Bypassa autenticação (apenas para desenvolvimento)
+		if a.DevMode {
+			slog.DebugContext(c.Request.Context(), "DevMode: Autenticação bypassada")
+			c.Set("user_id", "dev-user")
+			c.Next()
+			return
+		}
+
 		if a.Verifier == nil {
 			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "Autenticação não configurada"})
 			return
