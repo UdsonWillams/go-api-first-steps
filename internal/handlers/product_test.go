@@ -19,8 +19,8 @@ func setupRouter() *gin.Engine {
 	// 1. Banco em memória (SQLite)
 	repo := storage.NewRepository(":memory:")
 
-	// 2. Service
-	svc := &product.Service{Repo: repo}
+	// 2. Service (usando construtor)
+	svc := product.NewService(repo)
 
 	// 3. Handler
 	handler := &handlers.ProductHandler{Service: svc}
@@ -32,6 +32,8 @@ func setupRouter() *gin.Engine {
 	// Registra rotas (simplificado, sem Auth para focar no Handler)
 	r.POST("/products", handler.Create)
 	r.GET("/products", handler.List)
+	r.PUT("/products/:id", handler.Update)
+	r.DELETE("/products/:id", handler.Delete)
 
 	return r
 }
@@ -90,4 +92,31 @@ func TestListProducts(t *testing.T) {
 
 	assert.Equal(t, http.StatusOK, w.Code)
 	assert.Contains(t, w.Body.String(), "List Item")
+}
+
+func TestUpdateProduct_InvalidID(t *testing.T) {
+	router := setupRouter()
+
+	// Testa com ID não numérico
+	req, _ := http.NewRequest("PUT", "/products/abc", bytes.NewBuffer([]byte(`{"name":"Test"}`)))
+	req.Header.Set("Content-Type", "application/json")
+
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusBadRequest, w.Code)
+	assert.Contains(t, w.Body.String(), "ID inválido")
+}
+
+func TestDeleteProduct_InvalidID(t *testing.T) {
+	router := setupRouter()
+
+	// Testa com ID negativo
+	req, _ := http.NewRequest("DELETE", "/products/-1", nil)
+
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusBadRequest, w.Code)
+	assert.Contains(t, w.Body.String(), "ID inválido")
 }
