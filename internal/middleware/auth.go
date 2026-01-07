@@ -13,11 +13,23 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// User representa os dados do usuário extraídos do token
+type User struct {
+	ID       string   `json:"sub"`
+	Name     string   `json:"name"`
+	Email    string   `json:"email"`
+	Username string   `json:"preferred_username"` // ou "sub" se não tiver
+	Roles    []string `json:"-"`
+}
+
+const userContextKey = "user_context"
+
 // Authenticator gerencia a verificação de tokens OIDC.
 // Ele mantém uma referência ao Verifier do go-oidc para validar tokens JWT.
 type Authenticator struct {
 	Verifier *oidc.IDTokenVerifier
-	DevMode  bool // Se true, bypassa a autenticação (apenas para desenvolvimento)
+	ClientID string // ClientID usado para validar resource_access
+	DevMode  bool   // Se true, bypassa a autenticação (apenas para desenvolvimento)
 }
 
 // NewAuthenticator inicializa o Provider OIDC e configura o Verifier.
@@ -36,6 +48,7 @@ func NewAuthenticator(cfg *config.Config) (*Authenticator, error) {
 
 	return &Authenticator{
 		Verifier: verifier,
+		ClientID: cfg.ClientID,
 		DevMode:  false,
 	}, nil
 }
@@ -93,16 +106,38 @@ func (a *Authenticator) CheckMiddleware(mode string, requiredRoles ...string) gi
 		// Validação de Roles
 		if len(requiredRoles) > 0 {
 			var claims struct {
-				RealmAccess struct {
+				ResourceAccess map[string]struct {
 					Roles []string `json:"roles"`
-				} `json:"realm_access"`
+				} `json:"resource_access"`
+				Name              string `json:"name"`
+				Email             string `json:"email"`
+				PreferredUsername string `json:"preferred_username"`
 			}
 			if err := idToken.Claims(&claims); err != nil {
 				c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "Erro ao ler claims"})
 				return
 			}
 
-			userRoles := claims.RealmAccess.Roles
+			// Busca as roles específicas do ClientID configurado
+			var userRoles []string
+			if clientRoles, ok := claims.ResourceAccess[a.ClientID]; ok {
+				userRoles = clientRoles.Roles
+			} else {
+				// Fallback: Se não achar as roles do cliente, assume vazio (sem permissão)
+				slog.WarnContext(c.Request.Context(), "Nenhuma role encontrada para o ClientID", "client_id", a.ClientID)
+				userRoles = []string{}
+			}
+
+			// Injeta usuário Rico no Contexto
+			user := &User{
+				ID:       idToken.Subject,
+				Name:     claims.Name,
+				Email:    claims.Email,
+				Username: claims.PreferredUsername,
+				Roles:    userRoles,
+			}
+			c.Set(userContextKey, user)
+
 			rolesMap := make(map[string]bool)
 			for _, r := range userRoles {
 				rolesMap[r] = true
@@ -117,7 +152,7 @@ func (a *Authenticator) CheckMiddleware(mode string, requiredRoles ...string) gi
 					}
 				}
 			} else {
-				// Modo OR (Default): Pelo menos uma role deve estar presente
+				// Pelo menos uma role requerida deve estar presente (modo OR)
 				hasAtLeastOne := false
 				for _, req := range requiredRoles {
 					if rolesMap[req] {
@@ -130,9 +165,36 @@ func (a *Authenticator) CheckMiddleware(mode string, requiredRoles ...string) gi
 					return
 				}
 			}
+		} else {
+			// Mesmo sem roles requeridas, precisamos parsear o usuário básico
+			var claims struct {
+				Name              string `json:"name"`
+				Email             string `json:"email"`
+				PreferredUsername string `json:"preferred_username"`
+			}
+			_ = idToken.Claims(&claims) // Ignora erro pois verificamos token antes
+
+			c.Set(userContextKey, &User{
+				ID:       idToken.Subject,
+				Name:     claims.Name,
+				Email:    claims.Email,
+				Username: claims.PreferredUsername,
+			})
 		}
 
 		c.Set("user_id", idToken.Subject)
 		c.Next()
 	}
+}
+
+// GetUser recupera o usuário autenticado do contexto
+func GetUser(c *gin.Context) *User {
+	val, exists := c.Get(userContextKey)
+	if !exists {
+		return nil
+	}
+	if user, ok := val.(*User); ok {
+		return user
+	}
+	return nil
 }

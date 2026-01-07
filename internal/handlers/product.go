@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"strconv"
 
+	"go-api-first-steps/internal/middleware"
 	"go-api-first-steps/internal/services/product"
 
 	"github.com/gin-gonic/gin"
@@ -59,6 +60,16 @@ func (h *ProductHandler) Create(c *gin.Context) {
 // @Security     BearerAuth
 // @Router       /products [get]
 func (h *ProductHandler) List(c *gin.Context) {
+	// Exemplo: Recuperando o usuário autenticado do contexto
+	user := middleware.GetUser(c)
+	if user != nil {
+		slog.InfoContext(c.Request.Context(), "Usuário listando produtos",
+			"user_name", user.Name,
+			"user_email", user.Email,
+			"user_roles", user.Roles,
+		)
+	}
+
 	page, _ := strconv.Atoi(c.Query("page"))
 	pageSize, _ := strconv.Atoi(c.Query("page_size"))
 

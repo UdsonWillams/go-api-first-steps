@@ -35,3 +35,6 @@ go.work.sum
 # local db
 
 meubanco.db
+
+# Debug binaries
+__debug_bin*

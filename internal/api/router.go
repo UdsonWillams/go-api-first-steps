@@ -4,6 +4,7 @@ import (
 	"context"
 	v1 "go-api-first-steps/internal/api/v1"
 	"go-api-first-steps/internal/config"
+	"go-api-first-steps/internal/dependencies"
 	"go-api-first-steps/internal/handlers"
 	"go-api-first-steps/internal/middleware"
 	"log/slog"
@@ -20,7 +21,7 @@ import (
 //   - Rotas do Swagger UI.
 //   - Rotas de Health Check.
 //   - Grupos de API versionados (ex: /api/v1).
-func NewRouter(cfg *config.Config, productHandler *handlers.ProductHandler) *gin.Engine {
+func NewRouter(cfg *config.Config, ctn *dependencies.Container) *gin.Engine {
 	// Logger Configuration
 	r := gin.New()
 	r.Use(gin.Recovery())
@@ -48,6 +49,9 @@ func NewRouter(cfg *config.Config, productHandler *handlers.ProductHandler) *gin
 	}
 
 	// Swagger
+	r.GET("/swagger", func(c *gin.Context) {
+		c.Redirect(301, "/swagger/index.html")
+	})
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 	r.GET("/health", handlers.HealthCheck)
 
@@ -55,7 +59,7 @@ func NewRouter(cfg *config.Config, productHandler *handlers.ProductHandler) *gin
 	apiV1 := r.Group("/api/v1")
 	{
 		// Pass dependencies to V1 router
-		v1.RegisterRoutes(apiV1, authenticator, productHandler)
+		v1.RegisterRoutes(apiV1, authenticator, ctn.ProductHandler)
 	}
 
 	return r

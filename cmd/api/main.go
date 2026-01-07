@@ -11,9 +11,7 @@ import (
 
 	"go-api-first-steps/internal/api"
 	"go-api-first-steps/internal/config"
-	"go-api-first-steps/internal/handlers"
-	"go-api-first-steps/internal/services/product"
-	storage "go-api-first-steps/internal/storage/sqlite"
+	"go-api-first-steps/internal/dependencies"
 	"go-api-first-steps/pkg/logger"
 
 	// IMPORTANTE: Importe a pasta docs gerada pelo swag
@@ -35,23 +33,22 @@ import (
 // @in header
 // @name Authorization
 func main() {
-	// 1. Configuração Básica de Logs (Antes de tudo)
-	logger.Setup()
-
-	// 2. Carregar Configurações
+	// 1. Carregar Configurações (Carrega .env e variáveis)
 	cfg, err := config.Load()
 	if err != nil {
 		slog.Error("Falha ao carregar configurações", "error", err)
 		os.Exit(1)
 	}
 
+	// 2. Configuração Básica de Logs (Com App Insights se configurado)
+	logger.Setup(cfg.AppInsightsConnectionString, cfg.DevMode)
+
 	// 3. Injeção de Dependências
-	repo := storage.NewRepository(cfg.DBUrl)
-	service := product.NewService(repo)
-	handler := &handlers.ProductHandler{Service: service}
+	// Usamos o container para não poluir o main com construções complexas
+	ctn := dependencies.NewContainer(cfg)
 
 	// 4. Configuração do Servidor (Rotas)
-	r := api.NewRouter(cfg, handler)
+	r := api.NewRouter(cfg, ctn)
 
 	// 5. Configurar servidor HTTP
 	srv := &http.Server{

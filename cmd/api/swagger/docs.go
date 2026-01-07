@@ -228,6 +228,12 @@ const docTemplate = `{
                             "$ref": "#/definitions/handlers.MessageResponse"
                         }
                     },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.ErrorResponse"
+                        }
+                    },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {

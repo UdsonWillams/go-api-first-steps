@@ -5,6 +5,7 @@
 API REST moderna escrita em Go, focada em boas práticas, arquitetura limpa e alta performance.
 
 ## 📚 Documentação
+
 Toda a documentação detalhada foi movida para a pasta `docs/`.
 
 - **[Arquitetura](docs/ARCHITECTURE.md)**: Entenda a estrutura de pastas (Clean Architecture).
@@ -20,8 +21,10 @@ Toda a documentação detalhada foi movida para a pasta `docs/`.
 ## 🚀 Como Rodar
 
 ### Pré-requisitos
-- Go 1.22+
+
+- Go 1.25+
 - Make (Opcional, mas recomendado)
+- [Swag](https://github.com/swaggo/swag) (Para gerar documentação: `go install github.com/swaggo/swag/cmd/swag@latest`)
 
 ### Comandos Rápidos
 
@@ -40,6 +43,7 @@ make lint
 ```
 
 ## 🔐 Autenticação (OIDC / Keycloak)
+
 Este projeto usa **OpenID Connect**.
 Para rodar localmente, configure o `.env` (use `.env.example` como base) apontando para sem Keycloak.
 
@@ -49,6 +53,7 @@ KEYCLOAK_CLIENT_ID=meu-client
 ```
 
 ## 🛠 Features Implementadas
+
 - [x] API Versioning (`/api/v1`)
 - [x] Paginação de Resultados
 - [x] Autenticação Stateless com JWKS (Singleton)
